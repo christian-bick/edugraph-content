@@ -93,4 +93,8 @@ Contributions are particularly welcome and least complicate in the form of new w
 
 By contributing this way, you not only add to a growing database of worksheets available to everyone forever, but also add to a repository of labeled training data to train open source AI education models.
 
-For all other forms of contribution, it is highly recommended to open an issue in advance.
+For all other forms of contributions, it is **highly recommended to open a Github issue** in advance.
+
+## License
+
+This project is licensed under the Apache 2.0 License. See the LICENSE file for details.
