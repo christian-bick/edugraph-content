@@ -1,4 +1,4 @@
-# Imagine Content
+# EduGraph Content
 
 ## Introduction
 
