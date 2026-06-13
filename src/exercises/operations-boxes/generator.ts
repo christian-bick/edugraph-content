@@ -18,21 +18,6 @@ function generatePermutations() {
             .applyVariants('blankPart', ['answer', 'problem', 'problem-answer'])
             .applyVariants('allowNegatives', [false, true])
             .build(),
-
-        // Mixed operations with same digits
-        ...new PermutationBuilder()
-            .applyRange(['digitsNum1', "digitsNum2"], [2, 3])
-            .applyVariants('operations', ['add,subtract', 'multiply,divide', 'add,subtract,multiply', 'add,subtract,multiply,divide'])
-            .applyVariants('blankPart', ['answer', 'problem', 'problem-answer', 'operator', 'random'])
-            .applyVariants('allowNegatives', [false, true])
-            .build(),
-
-        // Mixed operations with random digits
-        ...new PermutationBuilder()
-            .applyVariants('operations', ['add,subtract', 'multiply,divide', 'add,subtract,multiply', 'add,subtract,multiply,divide'])
-            .applyVariants('blankPart', ['answer', 'problem', 'problem-answer', 'operator', 'random'])
-            .applyVariants('allowNegatives', [false, true])
-            .build(),
     ]
 }
 

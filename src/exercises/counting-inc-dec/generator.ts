@@ -4,7 +4,7 @@ import PermutationBuilder from "../../lib/permutation-builder.ts";
 function generatePermutations() {
     return new PermutationBuilder()
         .applyVariants('max', [9])
-        .applyVariants('type', ['inc', 'dec', 'mixed'])
+        .applyVariants('type', ['inc', 'dec'])
         .build()
 }
 

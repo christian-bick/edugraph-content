@@ -10,13 +10,6 @@ function generatePermutations() {
             .applyVariants('operations', ['add', 'subtract', 'multiply'])
             .applyVariants('allowNegatives', [false, true])
             .build(),
-
-        // Mixed operations with same digits
-        ...new PermutationBuilder()
-            .applyRange(['digitsNum1', "digitsNum2"], [2, 3])
-            .applyVariants('operations', ['add,subtract', 'add,subtract,multiply'])
-            .applyVariants('allowNegatives', [false, true])
-            .build(),
     ]
 }
 
