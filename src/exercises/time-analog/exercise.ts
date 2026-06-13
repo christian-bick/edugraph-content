@@ -1,14 +1,5 @@
 import "./exercise.scss";
-import { getParams } from "../../lib/params.ts";
-import { generateProblemSet, Problem } from "../../lib/time-problems.ts";
-
-function getConfig() {
-    const params = getParams(['interval', 'reverse']);
-    return {
-        interval: parseFloat(params.interval || '3600'),
-        reverse: params.reverse === 'true',
-    };
-}
+import { RenderPayload } from "../../types/ml-engine.ts";
 
 function formatTime(time: string, interval: number): string {
     const [h, m, s] = time.split(':').map(Number);
@@ -61,20 +52,15 @@ function createClock(time: string, interval: number, isEmpty: boolean, isSolutio
     `;
 }
 
-function createProblemHTML(problem: Problem, isAnswer: boolean, interval: number, isReverse: boolean) {
-    // In reverse mode, if it's NOT the answer, the clock is empty.
-    // In normal mode, if it's NOT the answer, the time in the box is hidden.
-    const showHands = !isReverse || isAnswer;
-    const showTime = isReverse || isAnswer;
+function createProblemHTML(time: string, interval: number, isReverse: boolean, isAnswerView: boolean) {
+    const showHands = !isReverse || isAnswerView;
+    const showTime = isReverse || isAnswerView;
 
-    // The solution is the clock hands if it's reverse mode and an answer.
-    const isClockSolution = isReverse && isAnswer;
-    
-    // The solution is the text in the box if it's normal mode and an answer.
-    const isTextSolution = !isReverse && isAnswer;
+    const isClockSolution = isReverse && isAnswerView;
+    const isTextSolution = !isReverse && isAnswerView;
 
-    const clockHTML = createClock(problem.time, interval, !showHands, isClockSolution);
-    const formattedTime = formatTime(problem.time, interval);
+    const clockHTML = createClock(time, interval, !showHands, isClockSolution);
+    const formattedTime = formatTime(time, interval);
 
     let answerBoxClasses = 'answer-box';
     if (isReverse) answerBoxClasses += ' reverse';
@@ -87,13 +73,18 @@ function createProblemHTML(problem: Problem, isAnswer: boolean, interval: number
         </div>`;
 }
 
-const config = getConfig();
-const [problem] = generateProblemSet({ interval: config.interval, problemCount: 1 });
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, config, isAnswerView } = payload;
+        const isReverse = config.visualParams.reverse === true || config.visualParams.reverse === 'true';
+        
+        exerciseContainer.innerHTML = createProblemHTML(problem.data.time, problem.data.interval, isReverse, isAnswerView);
 
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
-
-if (exerciseContainer && answerContainer) {
-    exerciseContainer.innerHTML = createProblemHTML(problem, false, config.interval, config.reverse);
-    answerContainer.innerHTML = createProblemHTML(problem, true, config.interval, config.reverse);
-}
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+    }
+};

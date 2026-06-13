@@ -1,0 +1,279 @@
+import { chromium, Browser, BrowserContext } from 'playwright';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { mkdirSync, rmSync, existsSync } from 'fs';
+import { ArithmeticGenerator } from '../generators/arithmetic.ts';
+import { CountingGenerator } from '../generators/counting.ts';
+import { MeasurementGenerator } from '../generators/measurement.ts';
+import { ComparisonGenerator } from '../generators/comparison.ts';
+import { OrderingGenerator } from '../generators/ordering.ts';
+import { WritingGenerator } from '../generators/writing.ts';
+import { TimeGenerator } from '../generators/time.ts';
+import { MLDatasetPipelineConfig, RenderPayload, AbstractProblem, VisualBlueprint } from '../types/ml-engine.ts';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PROJECT_ROOT = resolve(__dirname, '..', '..');
+const OUT_DIR = resolve(PROJECT_ROOT, 'out', 'ml-dataset');
+const BASE_URL = 'http://localhost:5173';
+const DEFAULT_CONCURRENCY = 8; // Number of parallel browser contexts
+
+// Helper to sanitize filenames
+function createSafeFilename(problemId: string, rendererId: string, params: any, instance: number): string {
+    const safeId = problemId.replace(/[^a-zA-Z0-9-]/g, '-');
+    const paramStrings = Object.entries(params)
+        .map(([k, v]) => `${k}-${v}`)
+        .join('_')
+        .replace(/[^a-zA-Z0-9-_]/g, '');
+    
+    const paramPart = paramStrings ? `_${paramStrings}` : '';
+    return `${safeId}_${rendererId}${paramPart}_inst-${instance}`;
+}
+
+async function renderDatasetSplit(
+    browser: Browser,
+    splitName: string,
+    problems: AbstractProblem[],
+    blueprints: VisualBlueprint[],
+    concurrency: number
+) {
+    if (problems.length === 0) return 0;
+    
+    console.log(`\n--- Rendering Split: ${splitName} (${problems.length} abstract problems) ---`);
+    const splitOutputDir = resolve(OUT_DIR, splitName);
+    if (!existsSync(splitOutputDir)) {
+        mkdirSync(splitOutputDir, { recursive: true });
+    }
+
+    let totalImages = 0;
+    
+    // We flatten the work into a queue of tasks
+    const taskQueue: { problem: AbstractProblem, blueprint: VisualBlueprint, instance: number }[] = [];
+    for (const blueprint of blueprints) {
+        // Filter problems to match the blueprint's type
+        const relevantProblems = problems.filter(p => {
+            if (p.type === 'arithmetic' && blueprint.rendererId.startsWith('operations')) return true;
+            if (p.type === 'counting' && blueprint.rendererId.startsWith('counting') && !blueprint.rendererId.includes('write')) return true;
+            if (p.type === 'measurement' && blueprint.rendererId.startsWith('measure')) return true;
+            if (p.type === 'comparison' && blueprint.rendererId.startsWith('numbers-compare')) return true;
+            if (p.type === 'ordering' && blueprint.rendererId.startsWith('numbers-order')) return true;
+            if (p.type === 'counting' && blueprint.rendererId.startsWith('numbers-write')) return true; // Writing uses counting abstract problem type
+            if (p.type === 'time' && blueprint.rendererId.startsWith('time')) return true;
+            return false;
+        });
+
+        for (const problem of relevantProblems) {
+            for (let i = 0; i < blueprint.instancesPerProblem; i++) {
+                taskQueue.push({ problem, blueprint, instance: i });
+            }
+        }
+    }
+
+    const totalTasks = taskQueue.length;
+    let completedTasks = 0;
+
+    const processQueue = async () => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        let currentRendererUrl = '';
+
+        try {
+            while (true) {
+                const task = taskQueue.shift();
+                if (!task) break;
+
+                const { problem, blueprint, instance } = task;
+                const url = `${BASE_URL}/exercises/${blueprint.rendererId}/exercise.html`;
+                
+                // Only navigate if the renderer changes
+                if (currentRendererUrl !== url) {
+                    await page.goto(url, { waitUntil: 'networkidle' });
+                    currentRendererUrl = url;
+                }
+
+                const baseFilename = createSafeFilename(problem.id, blueprint.rendererId, blueprint.visualParams, instance);
+
+                // Construct the payload for the Question view
+                const payloadQ: RenderPayload = {
+                    problem,
+                    config: {
+                        rendererId: blueprint.rendererId,
+                        visualParams: blueprint.visualParams
+                    },
+                    isAnswerView: false
+                };
+
+                await page.evaluate((p) => window.renderExercise!(p), payloadQ);
+                const qPath = resolve(splitOutputDir, `${baseFilename}_view-Q.png`);
+                await page.locator('#exercise').screenshot({ path: qPath, omitBackground: true });
+                totalImages++;
+
+                // Construct and inject payload for Answer view
+                const payloadA = { ...payloadQ, isAnswerView: true };
+                await page.evaluate((p) => window.renderExercise!(p), payloadA);
+
+                const aPath = resolve(splitOutputDir, `${baseFilename}_view-A.png`);
+                await page.locator('#exercise').screenshot({ path: aPath, omitBackground: true });
+                totalImages++;
+
+                completedTasks++;
+                // Progress logging every 10%
+                if (completedTasks % Math.max(1, Math.floor(totalTasks / 10)) === 0) {
+                    console.log(`[${splitName}] Progress: ${Math.floor((completedTasks / totalTasks) * 100)}%`);
+                }
+            }
+        } finally {
+            await context.close();
+        }
+    };
+
+    const workers = [];
+    for (let i = 0; i < Math.min(concurrency, taskQueue.length); i++) {
+        workers.push(processQueue());
+    }
+
+    await Promise.allSettled(workers);
+    return totalImages;
+}
+
+async function main() {
+    console.log('--- Starting ML Dataset Pipeline ---');
+
+    // Prepare Output Directory once
+    if (existsSync(OUT_DIR)) {
+        rmSync(OUT_DIR, { recursive: true, force: true });
+    }
+    mkdirSync(OUT_DIR, { recursive: true });
+
+    const splits = { train: 0.7, val: 0.2, test: 0.1 };
+
+    // 1. Arithmetic
+    const arithmeticPipelineConfig: MLDatasetPipelineConfig = {
+        generationConfig: { totalCount: 20, seed: 42, constraints: { operations: ['add', 'subtract', 'multiply'], maxDigits: 5, allowNegatives: true } },
+        splits,
+        visualDistribution: [
+            { rendererId: 'operations-boxes-single', visualParams: { blankPart: 'answer' }, instancesPerProblem: 1 },
+            { rendererId: 'operations-boxes-single', visualParams: { blankPart: 'problem' }, instancesPerProblem: 1 },
+            { rendererId: 'operations-vertical', visualParams: {}, instancesPerProblem: 1 }
+        ]
+    };
+
+    // 2. Counting
+    const countingPipelineConfig: MLDatasetPipelineConfig = {
+        generationConfig: { totalCount: 10, seed: 42, constraints: { maxCount: 10 } },
+        splits,
+        visualDistribution: [
+            { rendererId: 'counting-objects', visualParams: {}, instancesPerProblem: 1 },
+            { rendererId: 'counting-inc-dec', visualParams: {}, instancesPerProblem: 1 }
+        ]
+    };
+
+    // 3. Measurement
+    const measurementPipelineConfig: MLDatasetPipelineConfig = {
+        generationConfig: { totalCount: 10, seed: 42, constraints: { bandLength: 20 } },
+        splits,
+        visualDistribution: [
+            { rendererId: 'measure-length', visualParams: { decimal: true, reverse: false }, instancesPerProblem: 1 },
+            { rendererId: 'measure-length', visualParams: { decimal: true, reverse: true }, instancesPerProblem: 1 }
+        ]
+    };
+
+    // 4. Comparison
+    const comparisonPipelineConfig: MLDatasetPipelineConfig = {
+        generationConfig: { totalCount: 10, seed: 42, constraints: { digits: 2, includesZero: true } },
+        splits,
+        visualDistribution: [
+            { rendererId: 'numbers-compare', visualParams: {}, instancesPerProblem: 1 }
+        ]
+    };
+
+    // 5. Ordering
+    const orderingPipelineConfig: MLDatasetPipelineConfig = {
+        generationConfig: { totalCount: 10, seed: 42, constraints: { includesZero: true } },
+        splits,
+        visualDistribution: [
+            { rendererId: 'numbers-order', visualParams: { desc: false }, instancesPerProblem: 1 },
+            { rendererId: 'numbers-order', visualParams: { desc: true }, instancesPerProblem: 1 }
+        ]
+    };
+
+    // 6. Writing
+    const writingPipelineConfig: MLDatasetPipelineConfig = {
+        generationConfig: { totalCount: 9, seed: 42, constraints: { min: 1, max: 9 } },
+        splits,
+        visualDistribution: [
+            { rendererId: 'numbers-write', visualParams: { outline: false }, instancesPerProblem: 1 },
+            { rendererId: 'numbers-write', visualParams: { outline: true }, instancesPerProblem: 1 }
+        ]
+    };
+
+    // 7. Time
+    const timePipelineConfig: MLDatasetPipelineConfig = {
+        generationConfig: { totalCount: 10, seed: 42, constraints: { interval: 900 } }, // 15 mins
+        splits,
+        visualDistribution: [
+            { rendererId: 'time-analog', visualParams: { reverse: false }, instancesPerProblem: 1 },
+            { rendererId: 'time-analog', visualParams: { reverse: true }, instancesPerProblem: 1 }
+        ]
+    };
+
+    console.log(`Generating abstract problems...`);
+    const arithmeticDataset = new ArithmeticGenerator().generateDataset(arithmeticPipelineConfig.generationConfig);
+    const countingDataset = new CountingGenerator().generateDataset(countingPipelineConfig.generationConfig);
+    const measurementDataset = new MeasurementGenerator().generateDataset(measurementPipelineConfig.generationConfig);
+    const comparisonDataset = new ComparisonGenerator().generateDataset(comparisonPipelineConfig.generationConfig);
+    const orderingDataset = new OrderingGenerator().generateDataset(orderingPipelineConfig.generationConfig);
+    const writingDataset = new WritingGenerator().generateDataset(writingPipelineConfig.generationConfig);
+    const timeDataset = new TimeGenerator().generateDataset(timePipelineConfig.generationConfig);
+
+    const trainSet = [];
+    const valSet = [];
+    const testSet = [];
+
+    const processSplits = (dataset: AbstractProblem[], ratios: any) => {
+        const count = dataset.length;
+        const trainC = Math.floor(count * ratios.train);
+        const valC = Math.floor(count * ratios.val);
+        trainSet.push(...dataset.slice(0, trainC));
+        valSet.push(...dataset.slice(trainC, trainC + valC));
+        testSet.push(...dataset.slice(trainC + valC));
+    }
+
+    processSplits(arithmeticDataset, splits);
+    processSplits(countingDataset, splits);
+    processSplits(measurementDataset, splits);
+    processSplits(comparisonDataset, splits);
+    processSplits(orderingDataset, splits);
+    processSplits(writingDataset, splits);
+    processSplits(timeDataset, splits);
+
+    console.log(`Split distribution: Train (${trainSet.length}), Val (${valSet.length}), Test (${testSet.length})`);
+
+    console.log(`Launching browser with ${DEFAULT_CONCURRENCY} parallel workers...`);
+    const browser = await chromium.launch({ headless: true });
+
+    const startTime = performance.now();
+    let totalRenderedImages = 0;
+
+    const allBlueprints = [
+        ...arithmeticPipelineConfig.visualDistribution, 
+        ...countingPipelineConfig.visualDistribution,
+        ...measurementPipelineConfig.visualDistribution,
+        ...comparisonPipelineConfig.visualDistribution,
+        ...orderingPipelineConfig.visualDistribution,
+        ...writingPipelineConfig.visualDistribution,
+        ...timePipelineConfig.visualDistribution
+    ];
+
+    totalRenderedImages += await renderDatasetSplit(browser, 'train', trainSet, allBlueprints, DEFAULT_CONCURRENCY);
+    totalRenderedImages += await renderDatasetSplit(browser, 'val', valSet, allBlueprints, DEFAULT_CONCURRENCY);
+    totalRenderedImages += await renderDatasetSplit(browser, 'test', testSet, allBlueprints, DEFAULT_CONCURRENCY);
+
+    await browser.close();
+    const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+    const avgMs = ((performance.now() - startTime) / totalRenderedImages).toFixed(1);
+    console.log(`\nSuccess! Generated ${totalRenderedImages} total images in ${duration}s (${avgMs}ms per image).`);
+    console.log(`Output saved to: ${OUT_DIR}`);
+}
+
+main().catch(console.error);

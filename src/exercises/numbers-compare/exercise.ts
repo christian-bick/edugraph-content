@@ -1,31 +1,26 @@
-import "./exercise.scss"
-import {getParams} from "../../lib/params.ts";
-import {generateProblemSet, Problem} from "../../lib/comparison-problems.ts"
+import "./exercise.scss";
+import { RenderPayload } from "../../types/ml-engine.ts";
 
-function getConfig() {
-    const params = getParams(['digits', 'includesZero'])
-    return {
-        digits: parseInt(params.digits || '1', 10),
-        includesZero: params.includesZero === 'true',
-    }
-}
-
-function createProblemHTML(problem: Problem, isAnswer: boolean) {
+function createProblemHTML(data: { num1: number, num2: number, answer: string }, isAnswerView: boolean) {
     return `
         <div class="problem">
-            <span class="number">${problem.num1}</span>
-            <span class="answer-box">${isAnswer ? problem.answer : ''}</span>
-            <span class="number">${problem.num2}</span>
+            <span class="number">${data.num1}</span>
+            <span class="answer-box ${isAnswerView ? 'solution' : ''}">${isAnswerView ? data.answer : ''}</span>
+            <span class="number">${data.num2}</span>
         </div>`;
 }
 
-const config = getConfig();
-const [problem] = generateProblemSet({ ...config, problemCount: 1 });
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, isAnswerView } = payload;
+        
+        exerciseContainer.innerHTML = createProblemHTML(problem.data as any, isAnswerView);
 
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
-
-if (exerciseContainer && answerContainer) {
-    exerciseContainer.innerHTML = createProblemHTML(problem, false);
-    answerContainer.innerHTML = createProblemHTML(problem, true);
-}
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+    }
+};

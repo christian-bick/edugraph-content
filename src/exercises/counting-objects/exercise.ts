@@ -1,40 +1,34 @@
-import { random } from "../../lib/random.ts";
 import "./exercise.scss";
-import { getParams } from "../../lib/params.ts";
+import { RenderPayload } from "../../types/ml-engine.ts";
+import { random } from "../../lib/random.ts";
 
 const ICONS = ['circle.svg', 'square.svg', 'triangle.svg', 'star.svg', 'pentagon.svg', 'hexagon.svg', 'heart.svg', 'diamond.svg'];
 
-function getConfig() {
-    const params = getParams(['count']);
-    const maxCount = parseInt(params.count || '5', 10);
-    return {
-        maxCount: maxCount,
-    };
-}
-
-function generateProblem(maxCount: number) {
-    const minCount = Math.max(1, maxCount - 9); // e.g. for count=10, minCount=1; for count=20, minCount=11
-    const numObjects = Math.floor(random() * (maxCount - minCount + 1)) + minCount;
-    const icon = ICONS[Math.floor(random() * ICONS.length)];
-    return { numObjects, icon };
-}
-
-function createProblemHTML(problem: { numObjects: number, icon: string }, showAnswer: boolean) {
-    const objectsHTML = Array(problem.numObjects).fill(`<img src="/icons/counting/${problem.icon}" alt="counting object">`).join('');
+function createProblemHTML(numObjects: number, icon: string, showAnswer: boolean) {
+    const objectsHTML = Array(numObjects).fill(`<img src="/icons/counting/${icon}" alt="counting object">`).join('');
     return `
         <div class="problem">
             <div class="objects-container">${objectsHTML}</div>
-            <div class="answer-box">${showAnswer ? problem.numObjects : ''}</div>
+            <div class="answer-box">${showAnswer ? numObjects : ''}</div>
         </div>`;
 }
 
-const config = getConfig();
-const problem = generateProblem(config.maxCount);
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, isAnswerView } = payload;
+        
+        // We pick an icon pseudo-randomly based on the problem id so it stays consistent between Q and A views,
+        // or we can just pick one deterministically. Let's use the problem ID to derive an index.
+        const iconIndex = Array.from(problem.id).reduce((acc, char) => acc + char.charCodeAt(0), 0) % ICONS.length;
+        const icon = ICONS[iconIndex];
+        
+        exerciseContainer.innerHTML = createProblemHTML(problem.data.numObjects, icon, isAnswerView);
 
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
-
-if (exerciseContainer && answerContainer) {
-    exerciseContainer.innerHTML = createProblemHTML(problem, false);
-    answerContainer.innerHTML = createProblemHTML(problem, true);
-}
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+    }
+};

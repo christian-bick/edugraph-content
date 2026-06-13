@@ -1,20 +1,12 @@
 import "./exercise.scss";
-import { getParams } from "../../lib/params.ts";
+import { RenderPayload } from "../../types/ml-engine.ts";
 
-function getConfig() {
-    const params = getParams(['number', 'outline']);
-    return {
-        number: parseInt(params.number || '5', 10),
-        outline: params.outline === 'true',
-    };
-}
-
-function createProblemHTML(number: number, isAnswer: boolean, outline: boolean) {
+function createProblemHTML(number: number, isAnswerView: boolean, outline: boolean) {
     const boxesHTML = Array.from({ length: 3 }, (_, i) => {
         let boxClass = 'writing-box';
         let content: number | string = '';
 
-        if (isAnswer) {
+        if (isAnswerView) {
             boxClass += ' solution';
             content = number;
         } else {
@@ -31,9 +23,7 @@ function createProblemHTML(number: number, isAnswer: boolean, outline: boolean) 
     const tenFrameHTML = `
         <div class="ten-frame">
             ${Array.from({ length: 10 }, (_, i) => {
-                // In single exercise mode, the ten-frame is a stimulus, so it's always filled.
                 const isFilled = i < number;
-                // It shouldn't be green (solution) because it's the stimulus.
                 const boxClass = isFilled ? 'ten-frame-box filled' : 'ten-frame-box';
                 return `<div class="${boxClass}"></div>`;
             }).join('')}
@@ -47,11 +37,18 @@ function createProblemHTML(number: number, isAnswer: boolean, outline: boolean) 
         </div>`;
 }
 
-const config = getConfig();
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, config, isAnswerView } = payload;
+        const outline = config.visualParams.outline === true || config.visualParams.outline === 'true';
+        
+        exerciseContainer.innerHTML = createProblemHTML(problem.data.number, isAnswerView, outline);
 
-if (exerciseContainer && answerContainer) {
-    exerciseContainer.innerHTML = createProblemHTML(config.number, false, config.outline);
-    answerContainer.innerHTML = createProblemHTML(config.number, true, config.outline);
-}
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+    }
+};

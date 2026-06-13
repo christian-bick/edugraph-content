@@ -1,34 +1,30 @@
 import { random } from "../../lib/random.ts";
-import "./exercise.scss"
-import {getParams} from "../../lib/params.ts";
-import {generateProblem} from "../../lib/arithmetic-problems.ts"
+import "./exercise.scss";
+import { RenderPayload } from "../../types/ml-engine.ts";
 
-function getConfig() {
-    const params = getParams(['operations', 'allowNegatives', 'blankPart', 'digitsNum1', 'digitsNum2', 'maxDigits'])
-    return {
-        operations: params.operations ? params.operations.split(',') : ['add'],
-        allowNegatives: params.allowNegatives === 'true' || params.allowNegatives === '1',
-        digitsNum1: params.digitsNum1 ? parseInt(params.digitsNum1, 10) : undefined,
-        digitsNum2: params.digitsNum2 ? parseInt(params.digitsNum2, 10) : undefined,
-        maxDigits: params.maxDigits ? parseInt(params.maxDigits, 10) : 5,
-        blankPart: params.blankPart || 'answer'
-    }
-}
+const operatorSymbols: { [key: string]: string } = {
+    add: '+',
+    subtract: '−', // Using minus sign, not hyphen
+    multiply: '×',
+    divide: '÷'
+};
 
-const config = getConfig()
-const operation = config.operations[Math.floor(random() * config.operations.length)];
-const problem = generateProblem(operation, {
-    operations: config.operations,
-    problemCount: 1,
-    allowNegatives: config.allowNegatives,
-    digitsNum1: config.digitsNum1,
-    digitsNum2: config.digitsNum2,
-    maxDigits: config.maxDigits
-})
+function createProblemHTML(
+    data: { num1: number, num2: number, answer: number, operator: string }, 
+    visualParams: any, 
+    isAnswerView: boolean
+) {
+    const blankPart = visualParams.blankPart || 'answer';
+    const symbol = operatorSymbols[data.operator] || '?';
+    
+    const displayProblem: any = { 
+        num1: data.num1, 
+        num2: data.num2, 
+        answer: data.answer,
+        symbol: symbol
+    };
 
-function createProblemHTML(problem: any, blankPart: string, isAnswer: boolean) {
-    const displayProblem = { ...problem };
-    if (!isAnswer) {
+    if (!isAnswerView) {
         if (blankPart === 'symbol') {
             displayProblem.symbol = '';
         } else {
@@ -38,7 +34,7 @@ function createProblemHTML(problem: any, blankPart: string, isAnswer: boolean) {
 
     const getClass = (partName: string, baseClass: string) => {
         let cls = baseClass;
-        if (isAnswer && blankPart === partName) {
+        if (isAnswerView && blankPart === partName) {
             cls += ' solution';
         }
         return cls;
@@ -54,36 +50,50 @@ function createProblemHTML(problem: any, blankPart: string, isAnswer: boolean) {
         </div>`;
 }
 
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, config, isAnswerView } = payload;
+        
+        let blankPartKey = '';
+        const requestedBlank = config.visualParams.blankPart || 'answer';
+        
+        switch (requestedBlank) {
+            case 'problem': {
+                const parts = ['num1', 'num2'];
+                blankPartKey = parts[Math.floor(random() * parts.length)];
+                break;
+            }
+            case 'problem-answer': {
+                const parts = ['num1', 'num2', 'answer'];
+                blankPartKey = parts[Math.floor(random() * parts.length)];
+                break;
+            }
+            case 'operator':
+                blankPartKey = 'symbol';
+                break;
+            case 'random': {
+                const allParts = ['num1', 'num2', 'answer', 'symbol'];
+                blankPartKey = allParts[Math.floor(random() * allParts.length)];
+                break;
+            }
+            default:
+                blankPartKey = requestedBlank;
+                break;
+        }
 
-if (exerciseContainer && answerContainer) {
-    let blankPartKey = '';
-    switch (config.blankPart) {
-        case 'problem': {
-            const parts = ['num1', 'num2'];
-            blankPartKey = parts[Math.floor(random() * parts.length)];
-            break;
+        const specificVisualParams = { ...config.visualParams, blankPart: blankPartKey };
+        
+        exerciseContainer.innerHTML = createProblemHTML(
+            problem.data as any, 
+            specificVisualParams, 
+            isAnswerView
+        );
+
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
         }
-        case 'problem-answer': {
-            const parts = ['num1', 'num2', 'answer'];
-            blankPartKey = parts[Math.floor(random() * parts.length)];
-            break;
-        }
-        case 'operator':
-            blankPartKey = 'symbol';
-            break;
-        case 'random': {
-            const allParts = ['num1', 'num2', 'answer', 'symbol'];
-            blankPartKey = allParts[Math.floor(random() * allParts.length)];
-            break;
-        }
-        case 'answer':
-        default:
-            blankPartKey = 'answer';
-            break;
     }
-
-    exerciseContainer.innerHTML = createProblemHTML(problem, blankPartKey, false);
-    answerContainer.innerHTML = createProblemHTML(problem, blankPartKey, true);
-}
+};

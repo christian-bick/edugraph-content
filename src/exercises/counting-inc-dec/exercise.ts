@@ -1,35 +1,11 @@
-import { random } from "../../lib/random.ts";
 import "./exercise.scss";
-import { getParams } from "../../lib/params.ts";
+import { RenderPayload } from "../../types/ml-engine.ts";
 
 const ICONS = ['circle.svg', 'square.svg', 'triangle.svg', 'star.svg', 'pentagon.svg', 'hexagon.svg', 'heart.svg', 'diamond.svg'];
 
-function getConfig() {
-    const params = getParams(['max', 'type']);
-    return {
-        max: parseInt(params.max || '9', 10),
-        type: params.type || 'mixed',
-    };
-}
-
-function generateProblem(max: number, type: string) {
-    const problemType = type === 'mixed' ? (random() < 0.5 ? 'inc' : 'dec') : type;
-    let numObjects;
-
-    if (problemType === 'dec') {
-        numObjects = Math.floor(random() * (max - 2 + 1)) + 2;
-    } else { // 'inc'
-        numObjects = Math.floor(random() * (max - 1)) + 1;
-    }
-
-    const answer = problemType === 'inc' ? numObjects + 1 : numObjects - 1;
-    const icon = ICONS[Math.floor(random() * ICONS.length)];
-    return { numObjects, icon, type: problemType, answer };
-}
-
-function createProblemHTML(problem: { numObjects: number, icon: string, type: string, answer: number }, showAnswer: boolean) {
-    const objectsHTML = Array(problem.numObjects).fill(`<img src="/icons/counting/${problem.icon}" alt="counting object">`).join('');
-    const isInc = problem.type === 'inc';
+function createProblemHTML(data: { numObjects: number, icon: string, type: string, answer: number }, showAnswer: boolean) {
+    const objectsHTML = Array(data.numObjects).fill(`<img src="/icons/counting/${data.icon}" alt="counting object">`).join('');
+    const isInc = data.type === 'inc';
     const arrowClass = isInc ? 'triangle-up' : 'triangle-down';
     const textClass = isInc ? 'up' : 'down';
     
@@ -41,18 +17,32 @@ function createProblemHTML(problem: { numObjects: number, icon: string, type: st
                     <div class="${arrowClass}"></div>
                     <span class="arrow-text ${textClass}">1</span>
                 </div>
-                <div class="answer-box ${showAnswer ? 'solution' : ''}">${showAnswer ? problem.answer : ''}</div>
+                <div class="answer-box ${showAnswer ? 'solution' : ''}">${showAnswer ? data.answer : ''}</div>
             </div>
         </div>`;
 }
 
-const config = getConfig();
-const problem = generateProblem(config.max, config.type);
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, isAnswerView } = payload;
+        
+        const iconIndex = Array.from(problem.id).reduce((acc, char) => acc + char.charCodeAt(0), 0) % ICONS.length;
+        const icon = ICONS[iconIndex];
+        
+        const problemData = {
+            numObjects: problem.data.numObjects,
+            icon: icon,
+            type: problem.data.incDecType,
+            answer: problem.data.incDecAnswer
+        };
 
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
+        exerciseContainer.innerHTML = createProblemHTML(problemData, isAnswerView);
 
-if (exerciseContainer && answerContainer) {
-    exerciseContainer.innerHTML = createProblemHTML(problem, false);
-    answerContainer.innerHTML = createProblemHTML(problem, true);
-}
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+    }
+};

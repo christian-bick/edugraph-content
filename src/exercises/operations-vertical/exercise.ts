@@ -1,38 +1,41 @@
-import "./exercise.scss"
-import {getParams} from "../../lib/params.ts";
-import {generateProblemSet, Problem} from "../../lib/arithmetic-problems.ts"
+import "./exercise.scss";
+import { RenderPayload } from "../../types/ml-engine.ts";
 
-function getConfig() {
-    const params = getParams(['operations', 'digitsNum1', 'digitsNum2', 'allowNegatives'])
-    return {
-        operations: params.operations ? params.operations.split(',') : ['add'],
-        digitsNum1: parseInt(params.digitsNum1 || '0', 10),
-        digitsNum2: parseInt(params.digitsNum2 || '0', 10),
-        allowNegatives: params.allowNegatives === 'true' || params.allowNegatives === '1',
-        maxDigits: 5,
-        problemCount: 1
-    }
-}
+const operatorSymbols: { [key: string]: string } = {
+    add: '+',
+    subtract: '−',
+    multiply: '×',
+    divide: '÷'
+};
 
-function createProblemHTML(problem: Problem, isAnswer: boolean) {
+function createProblemHTML(
+    data: { num1: number, num2: number, answer: number, operator: string },
+    isAnswerView: boolean
+) {
+    const symbol = operatorSymbols[data.operator] || '?';
+
     return `
         <div class="problem">
-            <span class="number">${problem.num1}</span>
+            <span class="number">${data.num1}</span>
             <span class="number">
-                <span class="operator">${problem.symbol}</span>${problem.num2}
+                <span class="operator">${symbol}</span>${data.num2}
             </span>
             <div class="line"></div>
-            <div class="answer-box ${isAnswer ? 'solution' : ''}">${isAnswer ? problem.answer : ''}</div>
+            <div class="answer-box ${isAnswerView ? 'solution' : ''}">${isAnswerView ? data.answer : ''}</div>
         </div>`;
 }
 
-const config = getConfig();
-const [problem] = generateProblemSet(config);
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, isAnswerView } = payload;
+        
+        exerciseContainer.innerHTML = createProblemHTML(problem.data as any, isAnswerView);
 
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
-
-if (exerciseContainer && answerContainer) {
-    exerciseContainer.innerHTML = createProblemHTML(problem, false);
-    answerContainer.innerHTML = createProblemHTML(problem, true);
-}
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+    }
+};

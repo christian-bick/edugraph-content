@@ -1,15 +1,5 @@
 import "./exercise.scss";
-import { getParams } from "../../lib/params.ts";
-import { generateProblemSet, Problem } from "../../lib/measure-problems.ts";
-
-function getConfig() {
-    const params = getParams(['bandLength', 'decimal', 'reverse']);
-    return {
-        bandLength: parseInt(params.bandLength || '20', 10),
-        decimal: params.decimal === 'true',
-        reverse: params.reverse === 'true',
-    };
-}
+import { RenderPayload } from "../../types/ml-engine.ts";
 
 function createMeasureBand(bandLength: number): string {
     let markers = '';
@@ -44,25 +34,24 @@ function createRectangle(length: number, color: string): string {
     `;
 }
 
-function createProblemHTML(problem: Problem, config: { decimal: boolean, reverse: boolean }, color: string, isAnswer: boolean) {
-    const measureBandHTML = createMeasureBand(problem.bandLength);
+function createProblemHTML(data: any, visualParams: any, color: string, isAnswerView: boolean) {
+    const isReverse = visualParams.reverse === true || visualParams.reverse === 'true';
+    const isDecimal = visualParams.decimal === true || visualParams.decimal === 'true';
+
+    const measureBandHTML = createMeasureBand(data.bandLength);
     
-    // In reverse mode, if it's NOT the answer, we hide the rectangle.
-    // In normal mode, if it's NOT the answer, we hide the text in the box.
-    const showRectangle = !config.reverse || isAnswer;
-    const showAnswerInBox = config.reverse || isAnswer;
+    const showRectangle = !isReverse || isAnswerView;
+    const showAnswerInBox = isReverse || isAnswerView;
+    const isTextSolution = !isReverse && isAnswerView;
 
-    // The text in the box is the solution only in normal mode (not reverse) when isAnswer is true.
-    const isTextSolution = !config.reverse && isAnswer;
+    const rectColor = isReverse ? 'forestgreen' : color;
+    const rectangleHTML = showRectangle ? createRectangle(data.problemLength, rectColor) : `<div style="height: 22px; width: ${data.problemLength * 30}px"></div>`;
 
-    const rectColor = config.reverse ? 'forestgreen' : color;
-    const rectangleHTML = showRectangle ? createRectangle(problem.problemLength, rectColor) : `<div style="height: 22px; width: ${problem.problemLength * 30}px"></div>`;
-
-    const answer = config.decimal ? (problem.problemLength).toFixed(1) : (problem.problemLength * 10).toFixed(0);
-    const unit = config.decimal ? 'cm' : 'mm';
+    const answer = isDecimal ? (data.problemLength).toFixed(1) : (data.problemLength * 10).toFixed(0);
+    const unit = isDecimal ? 'cm' : 'mm';
 
     let answerBoxClasses = 'answer-box';
-    if (config.reverse) answerBoxClasses += ' reverse';
+    if (isReverse) answerBoxClasses += ' reverse';
     if (isTextSolution) answerBoxClasses += ' solution';
 
     return `
@@ -75,14 +64,18 @@ function createProblemHTML(problem: Problem, config: { decimal: boolean, reverse
         </div>`;
 }
 
-const config = getConfig();
-const [problem] = generateProblemSet({ problemCount: 1, bandLength: config.bandLength });
+window.renderExercise = (payload: RenderPayload) => {
+    const exerciseContainer = document.getElementById('exercise');
+    
+    if (exerciseContainer) {
+        const { problem, config, isAnswerView } = payload;
+        const color = '#4682B4'; // SteelBlue
+        
+        exerciseContainer.innerHTML = createProblemHTML(problem.data, config.visualParams, color, isAnswerView);
 
-const exerciseContainer = document.getElementById('exercise');
-const answerContainer = document.getElementById('answer');
-
-if (exerciseContainer && answerContainer) {
-    const color = '#4682B4'; // SteelBlue
-    exerciseContainer.innerHTML = createProblemHTML(problem, config, color, false);
-    answerContainer.innerHTML = createProblemHTML(problem, config, color, true);
-}
+        const answerContainer = document.getElementById('answer');
+        if (answerContainer) {
+            answerContainer.style.display = 'none';
+        }
+    }
+};
