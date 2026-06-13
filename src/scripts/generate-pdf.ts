@@ -63,10 +63,10 @@ export function generateConfigs(moduleName: string, generator: Generator): Confi
         const name = generator.generateName(params);
         const labels = generator.generateLabels(params);
         expandedConfigs.push({
-            questionDoc: `${moduleName}_${name}_question.pdf`,
-            answerDoc: `${moduleName}_${name}_answer.pdf`,
-            questionImage: `${moduleName}_${name}_question.png`,
-            answerImage: `${moduleName}_${name}_answer.png`,
+            questionDoc: `${moduleName}_${name}_view-Q.pdf`,
+            answerDoc: `${moduleName}_${name}_view-A.pdf`,
+            questionImage: `${moduleName}_${name}_view-Q.png`,
+            answerImage: `${moduleName}_${name}_view-A.png`,
             params: params,
             labels: labels
         });

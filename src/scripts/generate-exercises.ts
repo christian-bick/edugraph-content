@@ -76,8 +76,8 @@ export function generateConfigs(moduleName: string, generator: Generator): Confi
         const name = generator.generateName(params);
         const labels = generator.generateLabels(params);
         expandedConfigs.push({
-            questionImage: `${moduleName}_${name}_question.png`,
-            answerImage: `${moduleName}_${name}_answer.png`,
+            questionImage: `${moduleName}_${name}_view-Q.png`,
+            answerImage: `${moduleName}_${name}_view-A.png`,
             params: params,
             labels: labels
         });
