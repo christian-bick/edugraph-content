@@ -1,10 +1,10 @@
-import puppeteer, {Browser, Page} from 'puppeteer';
-import {dirname, resolve} from 'path';
-import {fileURLToPath} from 'url';
-import {existsSync, mkdirSync, writeFileSync, rmSync, readdirSync, appendFileSync} from 'fs';
-import {createHash} from 'crypto';
-import {getSortedUrlSearchParams} from "../lib/params.ts";
-import {execSync} from "child_process"
+import { chromium, Browser, BrowserContext, Page } from 'playwright';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync, mkdirSync, writeFileSync, rmSync, readdirSync, appendFileSync } from 'fs';
+import { createHash } from 'crypto';
+import { getSortedUrlSearchParams } from "../lib/params.ts";
+import { execSync } from "child_process"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,7 +14,6 @@ const OUT_DIR = resolve(PROJECT_ROOT, 'out', 'exercises');
 const LOG_FILE = resolve(PROJECT_ROOT, 'out', 'logs', 'exercises.log');
 const BASE_URL = 'http://localhost:5173';
 const DEFAULT_CONCURRENCY = 10;
-const PROTOCOL_TIMEOUT = 60000; // 60 seconds
 
 interface Generator {
     generatePermutations: () => { params: any }[];
@@ -49,7 +48,7 @@ function updateProgressBar(current: number, total: number, moduleName: string) {
 export async function loadConfigGenerator(moduleName: string): Promise<Generator> {
     const configGenerationPath = resolve(PROJECT_ROOT, 'src', 'exercises', moduleName, 'generator.ts');
     try {
-        const {default: generator} = await import('file:///' + configGenerationPath.replace(/\\/g, '/'));
+        const { default: generator } = await import('file:///' + configGenerationPath.replace(/\\/g, '/'));
         return generator
     } catch (error) {
         const errorMsg = `Failed to load configuration for module: ${moduleName}`;
@@ -73,7 +72,7 @@ export function generateConfigs(moduleName: string, generator: Generator): Confi
     const expandedConfigs: Config[] = [];
     const permutations = generator.generatePermutations();
     for (const perm of permutations) {
-        const {params} = perm;
+        const { params } = perm;
         const name = generator.generateName(params);
         const labels = generator.generateLabels(params);
         expandedConfigs.push({
@@ -96,23 +95,22 @@ async function processConfiguration(
     const hashSum = createHash('sha256');
 
     log(`Navigating to ${url}`);
-    await page.goto(url, {waitUntil: 'networkidle0'});
+    await page.goto(url, { waitUntil: 'networkidle' });
 
     const fullHtml = await page.content();
     hashSum.update(fullHtml);
     config.hash = hashSum.digest('hex');
 
-    const questionElement = await page.$('#exercise');
-    const answerElement = await page.$('#answer');
+    const questionElement = await page.locator('#exercise');
+    const answerElement = await page.locator('#answer');
 
-    if (!questionElement || !answerElement) {
+    if (await questionElement.count() === 0 || await answerElement.count() === 0) {
         throw new Error(`Exercise or Answer element not found for ${url}`);
     }
 
     // --- Generate Question PNG ---
     await questionElement.screenshot({
         path: resolve(moduleOutputDir, config.questionImage),
-        type: 'png',
         omitBackground: true
     });
     log(`Question PNG generated for: ${config.questionImage}`);
@@ -120,7 +118,6 @@ async function processConfiguration(
     // --- Generate Answer PNG ---
     await answerElement.screenshot({
         path: resolve(moduleOutputDir, config.answerImage),
-        type: 'png',
         omitBackground: true
     });
     log(`Answer PNG generated for: ${config.answerImage}`);
@@ -144,17 +141,14 @@ export async function generateExercises(moduleName: string, options: {
     if (!isDryRun) {
         if (existsSync(moduleOutputDir)) {
             log(`Cleaning output directory: ${moduleOutputDir}`);
-            rmSync(moduleOutputDir, {recursive: true, force: true});
+            rmSync(moduleOutputDir, { recursive: true, force: true });
         }
-        mkdirSync(moduleOutputDir, {recursive: true});
+        mkdirSync(moduleOutputDir, { recursive: true });
     }
 
     log('Launching browser...');
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: PROTOCOL_TIMEOUT
-    });
-    
+    const browser = await chromium.launch({ headless: true });
+
     let completed = 0;
     const total = configurations.length;
     updateProgressBar(0, total, moduleName);
@@ -163,14 +157,20 @@ export async function generateExercises(moduleName: string, options: {
     const errors: { config: Config, error: any }[] = [];
 
     const processQueue = async () => {
-        const page = await browser.newPage();
+        // Each worker gets its own isolated context
+        const context = await browser.newContext();
+        const page = await context.newPage();
         try {
             while (true) {
                 const config = queue.shift();
                 if (!config) break;
 
                 if (generatedFileNames.has(config.questionImage)) {
-                    throw new Error(`Duplicate filename detected: ${config.questionImage}`);
+                    // We log but don't throw to avoid killing other workers
+                    const error = new Error(`Duplicate filename detected: ${config.questionImage}`);
+                    log(String(error));
+                    errors.push({ config, error });
+                    continue;
                 }
                 generatedFileNames.add(config.questionImage);
 
@@ -188,7 +188,7 @@ export async function generateExercises(moduleName: string, options: {
                 updateProgressBar(completed, total, moduleName);
             }
         } finally {
-            await page.close();
+            await context.close();
         }
     };
 
@@ -197,7 +197,7 @@ export async function generateExercises(moduleName: string, options: {
         for (let i = 0; i < Math.min(concurrency, total); i++) {
             workers.push(processQueue());
         }
-        await Promise.all(workers);
+        await Promise.allSettled(workers);
     } finally {
         await browser.close();
         log('Browser closed.');
@@ -205,14 +205,12 @@ export async function generateExercises(moduleName: string, options: {
 
     if (errors.length > 0) {
         log(`${errors.length} errors occurred during generation.`);
-        // We still proceed to generate meta.json for the successful ones, 
-        // but we might want to filter out the ones that failed.
     }
 
     log('Generating meta file...');
     const versionHash = execSync('git rev-parse HEAD').toString().trim();
     const creationTimestamp = Math.floor(Date.now() / 1000);
-    
+
     // Filter out configurations that had errors
     const errorImages = new Set(errors.map(e => e.config.questionImage));
     const successfulConfigs = configurations.filter(c => !errorImages.has(c.questionImage));
@@ -264,7 +262,7 @@ async function main() {
     for (const module of modulesToGenerate) {
         try {
             log(`--- Starting module: ${module} ---`);
-            await generateExercises(module, {isDryRun, concurrency});
+            await generateExercises(module, { isDryRun, concurrency });
             log(`--- Successfully completed module: ${module} ---`);
         } catch (error) {
             log(`--- Error in module ${module}: ---`);
