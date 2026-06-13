@@ -15,7 +15,7 @@ function createProblemHTML(number: number, isAnswer: boolean, outline: boolean) 
         let content: number | string = '';
 
         if (isAnswer) {
-            boxClass += ' answer';
+            boxClass += ' solution';
             content = number;
         } else {
             if (outline) {
@@ -31,7 +31,9 @@ function createProblemHTML(number: number, isAnswer: boolean, outline: boolean) 
     const tenFrameHTML = `
         <div class="ten-frame">
             ${Array.from({ length: 10 }, (_, i) => {
-                const isFilled = isAnswer && i < number;
+                // In single exercise mode, the ten-frame is a stimulus, so it's always filled.
+                const isFilled = i < number;
+                // It shouldn't be green (solution) because it's the stimulus.
                 const boxClass = isFilled ? 'ten-frame-box filled' : 'ten-frame-box';
                 return `<div class="${boxClass}"></div>`;
             }).join('')}
@@ -39,9 +41,9 @@ function createProblemHTML(number: number, isAnswer: boolean, outline: boolean) 
 
     return `
         <div class="problem-row">
+            ${tenFrameHTML}
             <div class="number-label">${number}</div>
             <div class="writing-boxes">${boxesHTML}</div>
-            ${tenFrameHTML}
         </div>`;
 }
 

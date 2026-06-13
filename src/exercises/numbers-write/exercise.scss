@@ -39,12 +39,12 @@
                 font-size: 2rem;
                 font-family: 'Roboto Mono', monospace;
 
-                &.answer {
+                &.solution {
                     color: forestgreen;
                 }
 
                 &.outline {
-                    color: #ddd;
+                    color: #bbb;
                 }
             }
         }
@@ -62,7 +62,7 @@
                 border: 1px solid #ccc;
 
                 &.filled {
-                    background-color: forestgreen;
+                    background-color: #3498db;
                     border-radius: 50%;
                     transform: scale(0.8);
                 }
