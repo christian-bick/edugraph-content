@@ -1,1 +1,1 @@
-Make yourself familiar with the project by reading the README.md in the project's root folder.
+Make yourself familiar with the project by reading the README.md in the project's root folder before executing any tasks.
