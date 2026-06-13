@@ -88,10 +88,11 @@ export interface ProblemGenerator {
      */
     generateLabels(permutationParams: Record<string, any>): string[];
     /** 
-     * Generates a set of guaranteed-unique abstract problems based on the constraints.
-     * Uses the global seed internally.
+     * Generates a single unique abstract problem based on the constraints.
+     * The returned ID is used for deduplication during dataset generation.
+     * Returns null if a valid problem could not be generated for the given parameters (triggers a retry).
      */
-    generateDataset(config: DatasetGenerationConfig): AbstractProblem[];
+    generate(params: Record<string, any>): Omit<AbstractProblem, "tags" | "type"> | null;
 }
 
 // --- ML Orchestrator Interfaces ---

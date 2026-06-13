@@ -1,4 +1,4 @@
-import { ProblemGenerator, DatasetGenerationConfig, AbstractProblem } from "../../types/ml-engine.ts";
+import { ProblemGenerator, AbstractProblem } from "../../types/ml-engine.ts";
 import { random } from "../../lib/random.ts";
 import { Area, Scope, Ability } from "edugraph-ts";
 
@@ -26,45 +26,22 @@ export class OrderingGenerator implements ProblemGenerator {
         ];
     }
 
-    generateDataset(config: DatasetGenerationConfig): AbstractProblem[] {
-        const { permutations, countPerPermutation = 1 } = config;
-        const generatedProblems: AbstractProblem[] = [];
-        const existingKeys = new Set<string>();
+    generate(params: Record<string, any>): Omit<AbstractProblem, "tags" | "type"> | null {
+        const includesZero = params.includesZero === 'true' || params.includesZero === true;
+        
+        const numberSet = includesZero
+            ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            : [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-        for (const params of permutations) {
-            const includesZero = params.includesZero === 'true' || params.includesZero === true;
-            
-            const numberSet = includesZero
-                ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-                : [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        const shuffled = shuffleArray(numberSet);
+        const selectedNumbers = shuffled.slice(0, 5);
+        const problemKey = selectedNumbers.join('-');
 
-            let countForThisPerm = 0;
-            let attempts = 0;
-            const maxAttempts = countPerPermutation * 50;
-
-            while (countForThisPerm < countPerPermutation && attempts < maxAttempts) {
-                attempts++;
-                
-                const shuffled = shuffleArray(numberSet);
-                const selectedNumbers = shuffled.slice(0, 5);
-                const problemKey = selectedNumbers.join(',');
-
-                if (!existingKeys.has(problemKey)) {
-                    existingKeys.add(problemKey);
-                    countForThisPerm++;
-                    
-                    generatedProblems.push({
-                        id: `order-${generatedProblems.length + 1}-${problemKey.replace(/,/g, '-')}`,
-                        type: this.type,
-                        data: {
-                            numbers: selectedNumbers,
-                            _permutationParams: params 
-                        }
-                    });
-                }
+        return {
+            id: problemKey,
+            data: {
+                numbers: selectedNumbers
             }
-        }
-
-        return generatedProblems;
+        };
     }
 }

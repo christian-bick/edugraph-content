@@ -1,4 +1,5 @@
-import { ProblemGenerator, DatasetGenerationConfig, AbstractProblem } from "../../types/ml-engine.ts";
+import { ProblemGenerator, AbstractProblem } from "../../types/ml-engine.ts";
+import { random } from "../../lib/random.ts";
 import { Area, Scope, Ability } from "edugraph-ts";
 
 export class WritingGenerator implements ProblemGenerator {
@@ -13,53 +14,18 @@ export class WritingGenerator implements ProblemGenerator {
         ];
     }
 
-    generateDataset(config: DatasetGenerationConfig): AbstractProblem[] {
-        const { permutations, countPerPermutation = 1 } = config;
-        const generatedProblems: AbstractProblem[] = [];
-        const existingKeys = new Set<string>();
+    generate(params: Record<string, any>): Omit<AbstractProblem, "tags" | "type"> | null {
+        const minNum = params.min || 1;
+        const maxNum = params.max || 9;
+        const fixedNumber = params.number;
 
-        for (const params of permutations) {
-            const minNum = params.min || 1;
-            const maxNum = params.max || 9;
-            const fixedNumber = params.number;
-
-            let countForThisPerm = 0;
-            let attempts = 0;
-            const maxAttempts = countPerPermutation * 10;
-            
-            let currentNum = fixedNumber !== undefined ? fixedNumber : minNum;
-
-            while (countForThisPerm < countPerPermutation && attempts < maxAttempts) {
-                attempts++;
-                
-                const problemKey = `${currentNum}`;
-
-                if (!existingKeys.has(problemKey)) {
-                    existingKeys.add(problemKey);
-                    countForThisPerm++;
-                    
-                    generatedProblems.push({
-                        id: `write-${generatedProblems.length + 1}-${problemKey}`,
-                        type: this.type,
-                        data: {
-                            number: currentNum,
-                            _permutationParams: params 
-                        }
-                    });
-                }
-                
-                if (fixedNumber === undefined) {
-                    currentNum++;
-                    if (currentNum > maxNum) {
-                        currentNum = minNum;
-                        if (countForThisPerm >= maxNum - minNum + 1) break;
-                    }
-                } else {
-                    break;
-                }
+        const currentNum = fixedNumber !== undefined ? fixedNumber : Math.floor(random() * (maxNum - minNum + 1)) + minNum;
+        
+        return {
+            id: `${currentNum}`,
+            data: {
+                number: currentNum
             }
-        }
-
-        return generatedProblems;
+        };
     }
 }
