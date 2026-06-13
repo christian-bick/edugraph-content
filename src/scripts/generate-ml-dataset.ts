@@ -156,14 +156,43 @@ async function runModulePipeline(browser: Browser, moduleName: string) {
     if (!GeneratorClass) throw new Error(`Could not find generator class for ${moduleName}`);
 
     const { config } = await import(`../generators/${moduleName}/permutations.ts`);
+    const { setSeed } = await import(`../lib/random.ts`);
     
+    if (config.generationConfig.seed !== undefined) {
+        setSeed(config.generationConfig.seed);
+    }
+
     const generator = new GeneratorClass();
     console.log(`Generating abstract problems for ${moduleName}...`);
-    const dataset = generator.generateDataset(config.generationConfig);
+    
+    const dataset: AbstractProblem[] = [];
+    const existingKeys = new Set<string>();
+    const { permutations, countPerPermutation = 1 } = config.generationConfig;
 
-    // Orchestrated Label Generation
-    for (const problem of dataset) {
-        problem.tags = generator.generateLabels(problem.data._permutationParams || {});
+    for (const params of permutations) {
+        let countForThisPerm = 0;
+        let attempts = 0;
+        const maxAttempts = countPerPermutation * 50;
+
+        while (countForThisPerm < countPerPermutation && attempts < maxAttempts) {
+            attempts++;
+            const problemStub = generator.generate(params);
+            
+            if (problemStub && !existingKeys.has(problemStub.id)) {
+                existingKeys.add(problemStub.id);
+                countForThisPerm++;
+                
+                const problem: AbstractProblem = {
+                    ...problemStub,
+                    id: `${moduleName}-${dataset.length + 1}-${problemStub.id}`,
+                    type: generator.type,
+                    tags: generator.generateLabels(params)
+                };
+                
+                problem.data._permutationParams = params;
+                dataset.push(problem);
+            }
+        }
     }
 
     // Split logic
