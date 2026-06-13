@@ -64,12 +64,15 @@ declare global {
  * The configuration used by the Abstract Generators to produce datasets.
  */
 export interface DatasetGenerationConfig {
-    /** The total number of mathematically unique problems to generate before splitting */
-    totalCount: number;
-    /** Specific mathematical constraints (e.g., { maxDigits: 2, allowNegatives: false }) */
-    constraints: Record<string, any>;
+    /** 
+     * An array of predefined parameter configurations (permutations).
+     * The generator will generate problems that fulfill each parameter set.
+     */
+    permutations: Record<string, any>[];
     /** The global random seed to use for this generation run */
     seed: number;
+    /** How many unique mathematical problems to generate PER permutation. Default is 1. */
+    countPerPermutation?: number;
 }
 
 /**

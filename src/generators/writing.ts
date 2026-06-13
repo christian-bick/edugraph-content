@@ -1,54 +1,72 @@
 import { ProblemGenerator, DatasetGenerationConfig, AbstractProblem } from "../types/ml-engine.ts";
+import { Area, Scope, Ability } from "edugraph-ts";
 
 export class WritingGenerator implements ProblemGenerator {
-    type: AbstractProblem['type'] = 'arithmetic'; // Keeping simple type or maybe 'counting'
+    type: AbstractProblem['type'] = 'arithmetic'; // Or counting
     compatibleRenderers = ['numbers-write'];
 
-    generateDataset(config: DatasetGenerationConfig): AbstractProblem[] {
-        const { totalCount, constraints } = config;
+    private generateLabels() {
+        return {
+            Area: [Area.IntegerNotation],
+            Ability: [Ability.ProcedureExecution],
+            Scope: [Scope.ArabicNumerals, Scope.Base10, Scope.NumbersSmaller10, Scope.NumbersWithoutZero],
+        };
+    }
 
+    generateDataset(config: DatasetGenerationConfig): AbstractProblem[] {
+        const { permutations, countPerPermutation = 1 } = config;
         const generatedProblems: AbstractProblem[] = [];
         const existingKeys = new Set<string>();
 
-        let attempts = 0;
-        const maxAttempts = totalCount * 10;
+        for (const params of permutations) {
+            const minNum = params.min || 1;
+            const maxNum = params.max || 9;
+            const fixedNumber = params.number;
 
-        // The only constraint is number from 1 to 9 (or based on constraints)
-        const minNum = constraints.min || 1;
-        const maxNum = constraints.max || 9;
-        
-        let currentNum = minNum;
+            const labels = this.generateLabels();
+            const tags = [
+                ...labels.Area,
+                ...labels.Scope,
+                ...labels.Ability
+            ];
 
-        while (generatedProblems.length < totalCount && attempts < maxAttempts) {
-            attempts++;
+            let countForThisPerm = 0;
+            let attempts = 0;
+            const maxAttempts = countPerPermutation * 10;
             
-            const problemKey = `${currentNum}`;
+            let currentNum = fixedNumber !== undefined ? fixedNumber : minNum;
 
-            if (!existingKeys.has(problemKey)) {
-                existingKeys.add(problemKey);
+            while (countForThisPerm < countPerPermutation && attempts < maxAttempts) {
+                attempts++;
                 
-                generatedProblems.push({
-                    id: `write-${generatedProblems.length + 1}-${problemKey}`,
-                    type: 'counting', // Just reuse existing type
-                    data: {
-                        number: currentNum
-                    },
-                    tags: []
-                });
-            }
-            
-            currentNum++;
-            if (currentNum > maxNum) {
-                currentNum = minNum;
-                // If we've generated all possible numbers, we can't generate more unique ones
-                if (generatedProblems.length === maxNum - minNum + 1) {
+                const problemKey = `${currentNum}`;
+
+                if (!existingKeys.has(problemKey)) {
+                    existingKeys.add(problemKey);
+                    countForThisPerm++;
+                    
+                    generatedProblems.push({
+                        id: `write-${generatedProblems.length + 1}-${problemKey}`,
+                        type: 'counting',
+                        data: {
+                            number: currentNum,
+                            _permutationParams: params 
+                        },
+                        tags: tags
+                    });
+                }
+                
+                if (fixedNumber === undefined) {
+                    currentNum++;
+                    if (currentNum > maxNum) {
+                        currentNum = minNum;
+                        if (countForThisPerm >= maxNum - minNum + 1) break;
+                    }
+                } else {
+                    // Only one number allowed for this permutation if it's fixed
                     break;
                 }
             }
-        }
-
-        if (generatedProblems.length < totalCount) {
-            console.warn(`Could only generate ${generatedProblems.length} unique writing problems out of requested ${totalCount}. Constraints may be too tight.`);
         }
 
         return generatedProblems;
