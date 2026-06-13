@@ -129,6 +129,7 @@ export async function generateExercises(moduleName: string, options: {
 } = {}) {
     const concurrency = options.concurrency || DEFAULT_CONCURRENCY;
     const isDryRun = options.isDryRun || false;
+    const startTime = performance.now();
 
     log(`Generating Exercises for module: ${moduleName} (concurrency: ${concurrency})`);
 
@@ -206,6 +207,13 @@ export async function generateExercises(moduleName: string, options: {
     if (errors.length > 0) {
         log(`${errors.length} errors occurred during generation.`);
     }
+
+    const endTime = performance.now();
+    const durationMs = endTime - startTime;
+    const avgTimePerItemMs = total > 0 ? durationMs / total : 0;
+    
+    console.log(`\n[${moduleName}] Generated ${total} items in ${(durationMs / 1000).toFixed(2)}s (avg ${(avgTimePerItemMs).toFixed(0)}ms/item).`);
+    log(`Module ${moduleName} completed in ${(durationMs / 1000).toFixed(2)}s (avg ${(avgTimePerItemMs).toFixed(0)}ms/item).`);
 
     log('Generating meta file...');
     const versionHash = execSync('git rev-parse HEAD').toString().trim();
