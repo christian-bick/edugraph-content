@@ -11,7 +11,7 @@ function buildPermutations() {
             Scope.ArabicNumerals, 
             Scope.Base10, 
             Scope.NumbersSmaller10, 
-            Scope.NumbersWithoutZero,
+            Scope.IntegersWithoutZero,
             Ability.ProcedureExecution
         ])
         .applyConstraintRange(['number'], [1, 9])

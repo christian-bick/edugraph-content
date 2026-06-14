@@ -15,8 +15,8 @@ function buildPermutations() {
             Ability.ProcedureExecution
         ])
         .applyLabelVariants([
-            [Scope.NumbersWithZero],
-            [Scope.NumbersWithoutZero]
+            [Scope.IntegersWithZero],
+            [Scope.IntegersWithoutZero]
         ])
         .build();
 }

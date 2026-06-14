@@ -8,18 +8,18 @@ function buildPermutations() {
     return new DatasetPermutationBuilder()
         .addLabels([Scope.ArabicNumerals, Scope.Base10])
         .applyLabelVariants([
-            [Area.IntegerAddition],
-            [Area.IntegerSubtraction],
-            [Area.IntegerMultiplication],
-            [Area.IntegerDivision]
+            [Area.Addition],
+            [Area.Subtraction],
+            [Area.Multiplication],
+            [Area.Division]
         ])
         .applyLabelVariants([
             [Scope.NumbersSmaller10],
             [Scope.NumbersSmaller100]
         ])
         .applyLabelVariants([
-            [Scope.NumbersWithZero],
-            [Scope.NumbersWithoutZero]
+            [Scope.IntegersWithZero],
+            [Scope.IntegersWithoutZero]
         ])
         .applyConstraintVariants('blankPart', ['answer', 'problem'])
         .build();

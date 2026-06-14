@@ -11,14 +11,14 @@ export class ArithmeticGenerator implements ProblemGenerator {
 
         // 1. Determine Operator
         let operator: 'add' | 'subtract' | 'multiply' | 'divide' = 'add';
-        if (labels.includes(Area.IntegerAddition)) operator = 'add';
-        else if (labels.includes(Area.IntegerSubtraction)) operator = 'subtract';
-        else if (labels.includes(Area.IntegerMultiplication)) operator = 'multiply';
-        else if (labels.includes(Area.IntegerDivision)) operator = 'divide';
+        if (labels.includes(Area.Addition)) operator = 'add';
+        else if (labels.includes(Area.Subtraction)) operator = 'subtract';
+        else if (labels.includes(Area.Multiplication)) operator = 'multiply';
+        else if (labels.includes(Area.Division)) operator = 'divide';
 
         // 2. Determine Bounds
-        const allowNegatives = labels.includes(Scope.NumbersWithNegatives);
-        const includeZero = labels.includes(Scope.NumbersWithZero);
+        const allowNegatives = labels.includes(Scope.IntegersWithNegatives);
+        const includeZero = labels.includes(Scope.IntegersWithZero);
         
         const getRange = (digitConstraint?: number) => {
             if (digitConstraint) {

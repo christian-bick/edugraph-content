@@ -9,8 +9,8 @@ function buildPermutations() {
         .addLabels([
             Scope.ArabicNumerals,
             Scope.Base10,
-            Scope.NumbersWithoutZero,
-            Scope.NumbersWithoutNegatives,
+            Scope.IntegersWithoutZero,
+            Scope.IntegersWithoutNegatives,
             Scope.CountingSymbols,
             Area.NumerationWithIntegers
         ])

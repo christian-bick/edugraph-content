@@ -19,8 +19,8 @@ function buildPermutations() {
             [Scope.NumbersSmaller1000]
         ])
         .applyLabelVariants([
-            [Scope.NumbersWithZero],
-            [Scope.NumbersWithoutZero]
+            [Scope.IntegersWithZero],
+            [Scope.IntegersWithoutZero]
         ])
         .build();
 }

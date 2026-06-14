@@ -18,7 +18,7 @@ export class ComparisonGenerator implements ProblemGenerator {
 
         const includesZero = constraints.includesZero !== undefined 
             ? constraints.includesZero 
-            : !labels.includes(Scope.NumbersWithoutZero);
+            : !labels.includes(Scope.IntegersWithoutZero);
 
         const max = Math.pow(10, digits) - 1;
         let min = digits > 1 ? Math.pow(10, digits - 1) : 0;

@@ -44,9 +44,9 @@ describe('ArithmeticGenerator', () => {
     });
 
     describe('Label-driven constraints', () => {
-        it('should enforce zero when Scope.NumbersWithZero is present', () => {
+        it('should enforce zero when Scope.IntegersWithZero is present', () => {
             const input = {
-                labels: [Area.IntegerAddition, Scope.NumbersSmaller10, Scope.NumbersWithZero],
+                labels: [Area.Addition, Scope.NumbersSmaller10, Scope.IntegersWithZero],
                 constraints: {}
             };
             let zeroFound = false;
@@ -62,7 +62,7 @@ describe('ArithmeticGenerator', () => {
 
         it('should respect Scope.NumbersSmaller10', () => {
             const input = {
-                labels: [Area.IntegerAddition, Scope.NumbersSmaller10, Scope.NumbersWithoutZero],
+                labels: [Area.Addition, Scope.NumbersSmaller10, Scope.IntegersWithoutZero],
                 constraints: {}
             };
             for (let i = 0; i < 20; i++) {
@@ -76,7 +76,7 @@ describe('ArithmeticGenerator', () => {
 
         it('should respect explicit digit constraints over labels', () => {
             const input = {
-                labels: [Area.IntegerAddition, Scope.NumbersSmaller100],
+                labels: [Area.Addition, Scope.NumbersSmaller100],
                 constraints: { digitsNum1: 3 } // 3 digits even if scope says smaller 100
             };
             const stub = generator.generate(input);
