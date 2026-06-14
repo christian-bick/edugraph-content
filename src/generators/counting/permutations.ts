@@ -12,7 +12,8 @@ function buildPermutations() {
             Scope.IntegersWithoutZero,
             Scope.IntegersWithoutNegatives,
             Scope.CountingSymbols,
-            Area.NumerationWithIntegers
+            Area.NumerationWithIntegers,
+            Ability.ProcedureExecution
         ])
         .applyLabelVariants([
             [Scope.NumbersSmaller10],
@@ -23,10 +24,6 @@ function buildPermutations() {
             // Add conditional labels based on constraints for counting
             if (!input.constraints.type) {
                 input.labels.push(Area.IntegerNotation);
-                input.labels.push(Ability.ProcedureExecution);
-            } else {
-                input.labels.push(Ability.ProcedureApplication);
-                input.labels.push(Ability.ProcedureExecution);
             }
             return input;
         });

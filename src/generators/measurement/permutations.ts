@@ -12,7 +12,6 @@ function buildPermutations() {
             Scope.CentimeterScale, 
             Scope.MillimeterScale, 
             Scope.Tapemeter,
-            Ability.ProcedureApplication, 
             Ability.ProcedureExecution
         ])
         .applyConstraintVariants('bandLength', [10, 20])

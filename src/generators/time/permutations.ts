@@ -9,7 +9,6 @@ function buildPermutations() {
         .addLabels([
             Area.MeasuringTime,
             Scope.AnalogClock,
-            Ability.ProcedureApplication,
             Ability.ProcedureExecution
         ])
         .applyConstraintVariants('interval', [3600, 1800, 900, 60, 1])

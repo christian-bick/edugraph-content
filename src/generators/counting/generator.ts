@@ -17,10 +17,6 @@ export class CountingGenerator implements ProblemGenerator {
         }
 
         let incDecType = constraints.type; 
-        if (incDecType === undefined && labels.includes(Ability.ProcedureApplication)) {
-            // Pick inc or dec randomly if not specified but label says it should be one of them
-            incDecType = random() > 0.5 ? 'inc' : 'dec';
-        }
         
         const minCount = Math.max(1, maxCount - 9); 
         const numObjects = Math.floor(random() * (maxCount - minCount + 1)) + minCount;

@@ -11,7 +11,6 @@ function buildPermutations() {
             Scope.ArabicNumerals, 
             Scope.Base10, 
             Scope.NumbersSmaller10,
-            Ability.ProcedureApplication, 
             Ability.ProcedureExecution
         ])
         .applyLabelVariants([

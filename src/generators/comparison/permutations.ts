@@ -10,7 +10,6 @@ function buildPermutations() {
             Area.NumerationWithIntegers,
             Scope.ArabicNumerals, 
             Scope.Base10, 
-            Ability.ProcedureApplication, 
             Ability.ProcedureExecution
         ])
         .applyLabelVariants([

@@ -1,12 +1,16 @@
 import { MLDatasetPipelineConfig } from "../../types/ml-engine.ts";
-import { Area, Scope } from "edugraph-ts";
+import { Ability, Area, Scope } from "edugraph-ts";
 import DatasetPermutationBuilder from "../../lib/dataset-permutation-builder.ts";
 
 const SEED = 42;
 
 function buildPermutations() {
     return new DatasetPermutationBuilder()
-        .addLabels([Scope.ArabicNumerals, Scope.Base10])
+        .addLabels([
+            Scope.ArabicNumerals,
+            Scope.Base10,
+            Ability.ProcedureExecution
+        ])
         .applyLabelVariants([
             [Area.Addition],
             [Area.Subtraction],
