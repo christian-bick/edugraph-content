@@ -55,8 +55,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Copy license so it's included in the HF repo
+          # Copy license and README so they are included in the HF repo and preserved during deletion
           cp LICENSE out/dataset/
+          cp README.md out/dataset/
           
           # Clean up intermediate .metadata.jsonl files
           find out/dataset -name ".metadata.jsonl" -delete
@@ -64,8 +65,8 @@ jobs:
           # Install huggingface_hub
           pip install -U huggingface_hub
           
-          # Push the dataset folder to the HF repo main branch
-          hf upload christian-bick/edugraph-exercises ./out/dataset . --repo-type dataset
+          # Push the dataset folder to the HF repo main branch and delete stale remote files
+          hf upload christian-bick/edugraph-exercises ./out/dataset . --repo-type dataset --delete="*"
 
           # Tag the revision on HF to match the GitHub tag
           hf repo tag create christian-bick/edugraph-exercises ${{ github.ref_name }} --repo-type dataset
