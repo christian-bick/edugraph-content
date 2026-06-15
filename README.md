@@ -2,9 +2,9 @@
 
 ## Introduction
 
-Imagine Content is a powerful tool for generating printable, educational worksheets for children. This project provides a flexible and extensible framework for creating a wide variety of math-related exercises, from basic counting to more complex arithmetic problems.
+EduGraph Content is a synthetic ML dataset generator for educational competencies. It leverages the EduGraph ontology to programmatically generate high-quality, labeled datasets for various math-related exercises, from basic counting to more complex arithmetic problems.
 
-The worksheets are defined programmatically and rendered into HTML to simplify stlying and debugging. During generation these HTML previews are converted into PDFs for easy printing and distribution.
+The primary goal of this project is to provide a robust framework for generating training data for AI models in the education sector, ensuring that every exercise is precisely labeled with its corresponding educational competencies.
 
 ## Getting Started
 
@@ -28,26 +28,23 @@ This project uses `vite` for development and `vite-node` to run generation scrip
 
 ### Development Server
 
-To start the development server and view the worksheets in your browser, run:
+To start the development server and preview the generated exercises in your browser, run:
 
 ```bash
 npm run dev
 ```
 
-This will start a local server, and you can navigate to the different worksheet URLs to see them rendered live.
+This will start a local server, and you can navigate to different exercise URLs to see them rendered live.
 
-### Generating PDFs
+### Generating ML Datasets
 
-To generate PDF versions of the worksheets, use the `generate` script:
+To generate the ML dataset, use the `generate-ml-dataset` script:
 
 ```bash
-npm run generate
+npm run generate:ml
 ```
 
-This will create the PDF files in the `dist` directory. To run without creating files, use:
-```bash
-npm run generate:dry
-```
+This will process the exercise generators and produce a dataset suitable for model training.
 
 ### Running Tests
 
@@ -57,43 +54,41 @@ To run the test suite, use the `test` script:
 npm run test
 ```
 
-## Module Structure
+## Project Structure
 
 The project is organized into the following main directories:
 
+*   `src/generators`: Contains the core logic for generating permutations and labels for different educational competencies.
+*   `src/exercises`: Houses the HTML templates, styles, and TypeScript entry points for the visual representation of exercises.
 *   `src/lib`: Contains core logic and helper functions, such as the `PermutationBuilder` and labeling utilities.
-*   `src/partials`: Reusable HTML partials, like headers and footers, used across different worksheet pages.
-*   `src/scripts`: Houses the main scripts for generating PDFs (`generate-pdf.ts`) and other automation tasks.
-*   `src/worksheets`: This is the core directory where each type of worksheet is defined. Each subdirectory here represents a single worksheet type and contains its generator, HTML template, and styles.
+*   `src/scripts`: Houses scripts for dataset generation, validation, and other automation tasks.
+*   `src/types`: TypeScript type definitions used across the project.
 
-### Worksheet Modules
+### Generator Modules
 
-Each worksheet module within `src/worksheets` follows this general structure:
+Each generator module within `src/generators` follows this general structure:
 
-*   `generator.ts`: This file exports functions to generate all permutations of a worksheet, create a unique name for each permutation, and generate descriptive labels (metadata).
-*   `worksheet.html`: The HTML template for the worksheet. It contains the basic layout and placeholders for the generated content.
-*   `worksheet.scss`: The SASS file containing the styles specific to that worksheet.
-*   `worksheet.ts`: This is the TypeScript entry point for the worksheet page. It often contains the logic to generate the problems and render them into the HTML template.
+*   `generator.ts`: Exports functions to generate all permutations of an exercise, create a unique name for each permutation, and generate descriptive labels (metadata).
+*   `permutations.ts`: Defines the possible variations and parameters for the exercises.
+*   `generator.test.ts`: Unit tests for the generator logic.
 
 ## Metadata and Labeling
 
-Each worksheet generator (`generator.ts`) is responsible for producing not just the content of the worksheet, but also a set of descriptive metadata. This is handled by the `generateLabels` function within each generator.
+Each generator is responsible for producing not just the content of the exercise, but also a set of descriptive metadata. This is handled by the `generateLabels` function within each generator.
 
-These labels are imported from the `edugraph-ts` library and provide a standardized way to describe the educational competences addressed for each worksheet using the [EduGraph ontology](https://github.com/christian-bick/edugraph-ontology).
+These labels are based on the [EduGraph ontology](https://github.com/christian-bick/edugraph-ontology) and provide a standardized way to describe the educational competencies addressed by each exercise.
 
 This metadata can be used for:
 
-*   model training and fine-tuning for classification models
-*   generating embeddings (e.g. with the EduGraph embedding model)
-*   using it as metadata in search databases like ElasticSearch
+*   Model training and fine-tuning for classification and reasoning models.
+*   Generating embeddings for educational content.
+*   Building searchable databases of educational materials.
 
 ## Contributing
 
-Contributions are particularly welcome and least complicate in the form of new worksheet modules. Please feel free to submit a new module via pull request!
+Contributions are welcome! Adding new generators for additional educational competencies is a great way to help grow the available labeled training data for open-source AI education models.
 
-By contributing this way, you not only add to a growing database of worksheets available to everyone forever, but also add to a repository of labeled training data to train open source AI education models.
-
-For all other forms of contributions, it is **highly recommended to open a Github issue** in advance.
+For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
 
