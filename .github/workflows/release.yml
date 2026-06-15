@@ -55,9 +55,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Copy license and README so they are included in the HF repo and preserved during deletion
+          # Copy license and HF_README (as README) so they are included in the HF repo
           cp LICENSE out/dataset/
-          cp README.md out/dataset/
+          cp HF_README.md out/dataset/README.md
           
           # Clean up intermediate .metadata.jsonl files
           find out/dataset -name ".metadata.jsonl" -delete
