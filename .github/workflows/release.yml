@@ -48,6 +48,20 @@ jobs:
       - name: Create tarball
         run: tar -czf dataset.tar.gz -C out dataset
 
+      - name: Push to HuggingFace
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # Copy license so it's included in the HF repo
+          cp LICENSE out/dataset/
+          
+          # Install huggingface_hub cli
+          pip install -U "huggingface_hub[cli]"
+          
+          # Push the dataset folder to the HF repo under the specific tag
+          huggingface-cli upload christian-bick/edugraph-exercises ./out/dataset . --repo-type dataset --revision ${{ github.ref_name }} --create-pr
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
