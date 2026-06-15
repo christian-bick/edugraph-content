@@ -214,11 +214,23 @@ async function main() {
     const args = process.argv.slice(2);
     const targetModule = args.find(a => !a.startsWith('--'));
 
-    if (existsSync(OUT_DIR) && !targetModule) {
-        console.log('Cleaning whole dataset output directory...');
-        rmSync(OUT_DIR, { recursive: true, force: true });
+    if (!targetModule) {
+        if (existsSync(OUT_DIR)) {
+            console.log('Cleaning whole dataset output directory...');
+            rmSync(OUT_DIR, { recursive: true, force: true });
+        }
+        mkdirSync(OUT_DIR, { recursive: true });
+    } else {
+        // Clear specific module in both splits
+        ['train', 'val'].forEach(split => {
+            const moduleDir = resolve(OUT_DIR, split, targetModule);
+            if (existsSync(moduleDir)) {
+                console.log(`Cleaning target directory for module [${targetModule}] in split [${split}]...`);
+                rmSync(moduleDir, { recursive: true, force: true });
+            }
+        });
+        if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
     }
-    if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
 
     const browser = await chromium.launch({ headless: true });
     const startTime = performance.now();
