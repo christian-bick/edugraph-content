@@ -35,7 +35,7 @@ export const config: MLDatasetPipelineConfig = {
     },
     splits: { train: 0.8, val: 0.2 },
     visualDistribution: [
-        { rendererId: 'time-analog', visualParams: { reverse: false }, instancesPerProblem: 1 },
-        { rendererId: 'time-analog', visualParams: { reverse: true }, instancesPerProblem: 1 }
+        { viewId: 'time-analog', visualParams: { reverse: false }, instancesPerProblem: 1 },
+        { viewId: 'time-analog', visualParams: { reverse: true }, instancesPerProblem: 1 }
     ]
 };

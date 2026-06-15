@@ -10,7 +10,7 @@ The core philosophy of this system is **Label-Driven Generation**. Pedagogical l
 ### The Three Pillars
 The architecture is divided into three distinct layers:
 1.  **The Brain (`src/generators/`)**: Handles the abstract mathematical logic, permutation definition, and label constraint satisfaction. It has no knowledge of how a problem is visualized.
-2.  **The Body (`src/exercises/`)**: HTML/CSS/TS renderers that run in the browser. They receive abstract problem data and convert it into a visual DOM representation.
+2.  **The Body (`src/views/`)**: HTML/CSS/TS renderers that run in the browser. They receive abstract problem data and convert it into a visual DOM representation.
 3.  **The Heart (`src/scripts/`)**: Node.js scripts orchestrating Playwright (headless browser). These scripts unite the Brain and the Body, generating problems, injecting them into the renderers, taking screenshots, and compiling the metadata.
 
 ## 2. Core Concepts & Types
@@ -21,7 +21,7 @@ Defined in `src/types/ml-engine.ts`, these types represent the JSON structure of
 *   **`AbstractProblem`**: The fully realized object injected into the dataset, containing the `ProblemStub`, the `type`, and the resolved array of `tags` (labels).
 
 ### `RenderPayload`
-The data contract passed from the Playwright orchestrator into the browser's `window.renderExercise(payload)`. It contains:
+The data contract passed from the Playwright orchestrator into the browser's `window.renderView(payload)`. It contains:
 *   `problem`: The `AbstractProblem`.
 *   `config.visualParams`: Rendering instructions (e.g., `{ blankPart: 'answer', colors: 'vibrant' }`).
 *   `isAnswerView`: A boolean instructing the renderer to display the problem with or without the solution filled in.
@@ -35,7 +35,7 @@ The renderer typically seeds the RNG using the `problem.id`.
 ### `src/scripts/generate-dataset.ts`
 The primary pipeline orchestrator.
 *   **Execution**: `npm run generate:dataset [moduleName]`
-*   **Function**: Bootstraps Playwright, loads the specified generator(s), generates abstract problems according to the permutations config, serves the `src/exercises/` renderers via Vite, and captures headless screenshots.
+*   **Function**: Bootstraps Playwright, loads the specified generator(s), generates abstract problems according to the permutations config, serves the `src/views/` renderers via Vite, and captures headless screenshots.
 *   **Clearing Logic**: If no module is specified, it wipes the entire `out/dataset/` directory. If a specific module is provided, it performs a surgical wipe of only `out/dataset/train/<module>` and `out/dataset/val/<module>`.
 
 ### `src/scripts/generate-coverage-report.ts`
@@ -59,10 +59,10 @@ Adding content means creating two interconnected directories: a Generator and a 
 *   **`generator.test.ts`**: A Vitest suite. Must deeply test edge cases (e.g., digit boundaries, non-negative constraints) to ensure the constraint satisfier behaves correctly.
 *   **`checklist.md`**: (Optional) Specific instructions for the Visual QA LLM regarding how this specific module should visually render.
 
-### The Visual Renderer (`src/exercises/<renderer>/`)
-*   **`exercise.html`**: The base DOM. Must include `<div id="exercise"></div>` (the target for the Playwright screenshot).
+### The Visual Renderer (`src/views/<renderer>/`)
+*   **`exercise.html`**: The base DOM. Must include `<div id="view"></div>` (the target for the Playwright screenshot).
 *   **`exercise.scss`**: Styling. Must `@import "../shared.scss"` to inherit base font and reset styles.
-*   **`exercise.ts`**: Implements `window.renderExercise = (payload: RenderPayload) => { ... }`. Responsible for reading `payload.isAnswerView` and toggling visibility of the solution.
+*   **`exercise.ts`**: Implements `window.renderView = (payload: RenderPayload) => { ... }`. Responsible for reading `payload.isAnswerView` and toggling visibility of the solution.
 
 ## 5. How to Enrich the Dataset (Step-by-Step Guide)
 
@@ -70,7 +70,7 @@ To add a new mathematical concept or visual style to the dataset:
 
 ### Step 1: Scaffolding
 1. Create a new directory in `src/generators/` (e.g., `src/generators/fractions`).
-2. Create a corresponding renderer directory in `src/exercises/` (e.g., `src/exercises/fractions-pie`).
+2. Create a corresponding renderer directory in `src/views/` (e.g., `src/views/fractions-pie`).
 
 ### Step 2: Defining the Pedagogy (`permutations.ts`)
 Write the `permutations.ts` file. Determine which labels from `edugraph-ts` apply. Use the `DatasetPermutationBuilder` to cross-multiply labels with visual parameters. All permutations MUST include `Ability.ProcedureExecution`.
@@ -90,7 +90,7 @@ Implement the mathematical logic. Ensure that the properties of the generated pr
 Write robust unit tests verifying that the generator outputs correct math and respects bounds (e.g., resulting fractions do not exceed 1 if constrained). Run `npm run test` to verify.
 
 ### Step 5: Visual Implementation (`exercise.*`)
-Implement the DOM logic in `src/exercises/<renderer>/exercise.ts`.
+Implement the DOM logic in `src/views/<renderer>/exercise.ts`.
 *   Ensure that `isAnswerView: false` visually hides the answer (or renders an empty box/placeholder).
 *   Ensure that `isAnswerView: true` renders the exact same layout but with the answer visible.
 *   Use `setSeed(problem.id)` before making randomized layout decisions.

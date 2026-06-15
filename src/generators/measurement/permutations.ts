@@ -27,7 +27,7 @@ export const config: MLDatasetPipelineConfig = {
     },
     splits: { train: 0.8, val: 0.2 },
     visualDistribution: [
-        { rendererId: 'measure-length', visualParams: { decimal: true, reverse: false }, instancesPerProblem: 1 },
-        { rendererId: 'measure-length', visualParams: { decimal: true, reverse: true }, instancesPerProblem: 1 }
+        { viewId: 'measure-length', visualParams: { decimal: true, reverse: false }, instancesPerProblem: 1 },
+        { viewId: 'measure-length', visualParams: { decimal: true, reverse: true }, instancesPerProblem: 1 }
     ]
 };

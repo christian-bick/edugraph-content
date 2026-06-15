@@ -38,7 +38,7 @@ export const config: MLDatasetPipelineConfig = {
     },
     splits: { train: 0.8, val: 0.2 },
     visualDistribution: [
-        { rendererId: 'operations-boxes', visualParams: {}, instancesPerProblem: 1 },
-        { rendererId: 'operations-vertical', visualParams: {}, instancesPerProblem: 1 }
+        { viewId: 'operations-boxes', visualParams: {}, instancesPerProblem: 1 },
+        { viewId: 'operations-vertical', visualParams: {}, instancesPerProblem: 1 }
     ]
 };

@@ -19,7 +19,7 @@ export interface AbstractProblem {
  */
 export interface RenderConfig {
     /** The ID of the visual module to use (e.g., 'operations-boxes', 'operations-vertical') */
-    rendererId: string;
+    viewId: string;
     /** Visual-specific settings. 
      * e.g. for operations-boxes: { blankPart: 'answer' }
      * e.g. for operations-vertical: { showGridLines: true }
@@ -54,7 +54,7 @@ export interface ExerciseRenderer {
  */
 declare global {
     interface Window {
-        renderExercise?: (payload: RenderPayload) => void;
+        renderView?: (payload: RenderPayload) => void;
     }
 }
 
@@ -111,7 +111,7 @@ export interface ProblemGenerator {
  * A blueprint defining a specific visual variation to apply to an abstract problem.
  */
 export interface VisualBlueprint {
-    rendererId: string;
+    viewId: string;
     visualParams: Record<string, any>;
     /** How many instances of THIS specific variation to generate per problem */
     instancesPerProblem: number; 

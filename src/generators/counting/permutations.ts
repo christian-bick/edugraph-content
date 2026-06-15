@@ -38,7 +38,7 @@ export const config: MLDatasetPipelineConfig = {
     },
     splits: { train: 0.8, val: 0.2 },
     visualDistribution: [
-        { rendererId: 'counting-objects', visualParams: {}, instancesPerProblem: 1 },
-        { rendererId: 'counting-inc-dec', visualParams: {}, instancesPerProblem: 1 }
+        { viewId: 'counting-objects', visualParams: {}, instancesPerProblem: 1 },
+        { viewId: 'counting-inc-dec', visualParams: {}, instancesPerProblem: 1 }
     ]
 };

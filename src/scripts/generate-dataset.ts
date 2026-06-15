@@ -2,7 +2,7 @@ import { Browser, chromium } from 'playwright';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync, rmSync, writeFileSync, readdirSync } from 'fs';
-import { AbstractProblem, RenderPayload, VisualBlueprint } from '../types/ml-engine.ts';
+import { DatasetConfig } from '../config/dataset.config.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -61,7 +61,7 @@ async function renderDatasetSplit(
     const processQueue = async () => {
         const context = await browser.newContext();
         const page = await context.newPage();
-        let currentRendererUrl = '';
+        let currentViewUrl = '';
 
         try {
             while (true) {
@@ -69,29 +69,29 @@ async function renderDatasetSplit(
                 if (!task) break;
 
                 const { problem, blueprint, instance } = task;
-                const url = `${BASE_URL}/exercises/${blueprint.rendererId}/exercise.html`;
+                const url = `${BASE_URL}/views/${blueprint.viewId}/view.html`;
                 
-                if (currentRendererUrl !== url) {
+                if (currentViewUrl !== url) {
                     await page.goto(url, { waitUntil: 'networkidle' });
-                    currentRendererUrl = url;
+                    currentViewUrl = url;
                 }
 
-                const baseFilename = createSafeFilename(problem.id, blueprint.rendererId, blueprint.visualParams, instance);
+                const baseFilename = createSafeFilename(problem.id, blueprint.viewId, blueprint.visualParams, instance);
 
                 const renderAndRecord = async (isAnswerView: boolean, modeTag: string, modeName: string) => {
-                    const payload: RenderPayload = {
+                    const payload: any = {
                         problem,
                         config: {
-                            rendererId: blueprint.rendererId,
+                            viewId: blueprint.viewId,
                             visualParams: blueprint.visualParams
                         },
                         isAnswerView
                     };
 
-                    await page.evaluate((p) => window.renderExercise!(p), payload);
+                    await page.evaluate((p) => window.renderView!(p), payload);
                     const filename = `${baseFilename}_mode-${modeTag}.png`;
                     const outPath = resolve(splitOutputDir, filename);
-                    await page.locator('#exercise').screenshot({ path: outPath, omitBackground: true });
+                    await page.locator('#view').screenshot({ path: outPath, omitBackground: true });
                     
                     metadata.push({
                         filename,
@@ -140,20 +140,12 @@ async function runModulePipeline(browser: Browser, moduleName: string) {
         throw new Error(`Generator folder not found: ${modulePath}`);
     }
 
-    // Dynamic Imports from the module folder
-    const { ArithmeticGenerator } = await import(`../generators/${moduleName}/generator.ts`);
-    // Note: In a fully generic system, we'd export a generic class or factory.
-    // For now I'll use a mapping or assume a standard export name.
-    let GeneratorClass;
-    if (moduleName === 'arithmetic') GeneratorClass = (await import(`../generators/${moduleName}/generator.ts`)).ArithmeticGenerator;
-    else if (moduleName === 'counting') GeneratorClass = (await import(`../generators/${moduleName}/generator.ts`)).CountingGenerator;
-    else if (moduleName === 'measurement') GeneratorClass = (await import(`../generators/${moduleName}/generator.ts`)).MeasurementGenerator;
-    else if (moduleName === 'comparison') GeneratorClass = (await import(`../generators/${moduleName}/generator.ts`)).ComparisonGenerator;
-    else if (moduleName === 'ordering') GeneratorClass = (await import(`../generators/${moduleName}/generator.ts`)).OrderingGenerator;
-    else if (moduleName === 'writing') GeneratorClass = (await import(`../generators/${moduleName}/generator.ts`)).WritingGenerator;
-    else if (moduleName === 'time') GeneratorClass = (await import(`../generators/${moduleName}/generator.ts`)).TimeGenerator;
+    const moduleConfig = DatasetConfig.modules[moduleName];
+    if (!moduleConfig) {
+        throw new Error(`Module ${moduleName} not found in DatasetConfig`);
+    }
 
-    if (!GeneratorClass) throw new Error(`Could not find generator class for ${moduleName}`);
+    const GeneratorClass = moduleConfig.generatorClass;
 
     const { config } = await import(`../generators/${moduleName}/permutations.ts`);
     const { setSeed } = await import(`../lib/random.ts`);

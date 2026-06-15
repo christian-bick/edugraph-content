@@ -33,6 +33,6 @@ export const config: MLDatasetPipelineConfig = {
     },
     splits: { train: 0.8, val: 0.2 },
     visualDistribution: [
-        { rendererId: 'numbers-compare', visualParams: {}, instancesPerProblem: 1 }
+        { viewId: 'numbers-compare', visualParams: {}, instancesPerProblem: 1 }
     ]
 };

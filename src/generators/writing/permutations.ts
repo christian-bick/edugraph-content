@@ -27,7 +27,7 @@ export const config: MLDatasetPipelineConfig = {
     },
     splits: { train: 0.8, val: 0.2 },
     visualDistribution: [
-        { rendererId: 'numbers-write', visualParams: { outline: false }, instancesPerProblem: 1 },
-        { rendererId: 'numbers-write', visualParams: { outline: true }, instancesPerProblem: 1 }
+        { viewId: 'numbers-write', visualParams: { outline: false }, instancesPerProblem: 1 },
+        { viewId: 'numbers-write', visualParams: { outline: true }, instancesPerProblem: 1 }
     ]
 };

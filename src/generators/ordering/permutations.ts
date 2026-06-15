@@ -29,7 +29,7 @@ export const config: MLDatasetPipelineConfig = {
     },
     splits: { train: 0.8, val: 0.2 },
     visualDistribution: [
-        { rendererId: 'numbers-order', visualParams: { desc: false }, instancesPerProblem: 1 },
-        { rendererId: 'numbers-order', visualParams: { desc: true }, instancesPerProblem: 1 }
+        { viewId: 'numbers-order', visualParams: { desc: false }, instancesPerProblem: 1 },
+        { viewId: 'numbers-order', visualParams: { desc: true }, instancesPerProblem: 1 }
     ]
 };
