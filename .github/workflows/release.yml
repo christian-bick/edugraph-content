@@ -65,7 +65,7 @@ jobs:
           hf upload christian-bick/edugraph-exercises ./out/dataset . --repo-type dataset
 
           # Tag the revision on HF to match the GitHub tag
-          hf tag christian-bick/edugraph-exercises ${{ github.ref_name }} --repo-type dataset
+          hf repo tag create christian-bick/edugraph-exercises ${{ github.ref_name }} --repo-type dataset
 
       - name: Create Release
         id: create_release
