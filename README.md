@@ -1,95 +1,65 @@
 # EduGraph Content
 
-## Introduction
+**EduGraph Content** is a synthetic ML dataset generator designed to produce highly controlled, precisely labeled training data for AI models in the education sector. 
 
-EduGraph Content is a synthetic ML dataset generator for educational competencies. It leverages the EduGraph ontology to programmatically generate high-quality, labeled datasets for various math-related views, from basic counting to more complex arithmetic problems.
+By leveraging the [EduGraph Ontology](https://github.com/christian-bick/edugraph-ontology), this project programmatically generates math-related visual datasets—ranging from basic counting exercises to complex arithmetic procedures—where every generated image is mathematically bound to its educational labels.
 
-The primary goal of this project is to provide a robust framework for generating training data for AI models in the education sector, ensuring that every view is precisely labeled with its corresponding educational competencies.
+## General Concepts
 
-## Getting Started
+The pipeline is built on a **Label-Driven Generation** paradigm. Instead of generating a math problem and attempting to label it, the system receives a set of constraints (e.g., "Must include zero", "Uses addition") and generates problems that mathematically satisfy those semantic labels.
+
+The architecture is split into three main parts:
+*   **The Brain (Generators):** Abstract mathematical constraint satisfiers.
+*   **The Body (Views):** HTML/CSS renderers that turn abstract math into visual DOM elements.
+*   **The Heart (Orchestrator):** A Playwright-powered Node.js pipeline that generates permutations, injects them into views, captures screenshots, and compiles the dataset metadata.
+
+> **For a deep dive into the architecture, the dataset pipeline, and a step-by-step guide on how to add new generators and views, please read the [Technical Documentation (DOCS.md)](./DOCS.md).**
+
+## First Steps
 
 ### Prerequisites
 
-Before you begin, ensure you have the following installed:
-
-*   [Node.js](https://nodejs.org/) (which includes npm)
+*   [Node.js](https://nodejs.org/) (v20+ recommended)
 
 ### Installation
 
-Install the dependencies with the packing manager of your choice:
-
 ```bash
 npm install
+# Install Playwright dependencies for headless image generation
+npx playwright install --with-deps chromium
 ```
 
-## Usage
+### Usage
 
-This project uses `vite` for development and `vite-node` to run generation scripts.
-
-### Development Server
-
-To start the development server and preview the generated views in your browser, run:
-
-```bash
-npm run dev
-```
-
-This will start a local server, and you can navigate to different view URLs to see them rendered live.
-
-### Generating ML Datasets
-
-To generate the dataset, use the `generate-dataset` script:
-
+**1. Generate the Dataset**
+Generate the full ML dataset (images + `meta.json`). The output will be saved in `out/dataset/`.
 ```bash
 npm run generate:dataset
 ```
+*(Tip: You can generate a specific module by appending its name, e.g., `npm run generate:dataset arithmetic`)*
 
-This will process the view generators and produce a dataset suitable for model training.
+**2. Generate Coverage Report**
+Analyze the generated dataset to ensure proper pedagogical label coverage and distribution.
+```bash
+npm run report:coverage
+```
 
-### Running Tests
-
-To run the test suite, use the `test` script:
-
+**3. Run Tests**
+Validate the mathematical logic, constraints, and edge cases of the generators.
 ```bash
 npm run test
 ```
 
-## Project Structure
-
-The project is organized into the following main directories:
-
-*   `src/generators`: Contains the core logic for generating permutations and labels for different educational competencies.
-*   `src/views`: Houses the HTML templates, styles, and TypeScript entry points for the visual representation of views.
-*   `src/lib`: Contains core logic and helper functions, such as the `PermutationBuilder` and labeling utilities.
-*   `src/scripts`: Houses scripts for dataset generation, validation, and other automation tasks.
-*   `src/types`: TypeScript type definitions used across the project.
-
-### Generator Modules
-
-Each generator module within `src/generators` follows this general structure:
-
-*   `generator.ts`: Exports functions to generate all permutations of an view, create a unique name for each permutation, and generate descriptive labels (metadata).
-*   `permutations.ts`: Defines the possible variations and parameters for the views.
-*   `generator.test.ts`: Unit tests for the generator logic.
-
-## Metadata and Labeling
-
-Each generator is responsible for producing not just the content of the view, but also a set of descriptive metadata. This is handled by the `generateLabels` function within each generator.
-
-These labels are based on the [EduGraph ontology](https://github.com/christian-bick/edugraph-ontology) and provide a standardized way to describe the educational competencies addressed by each view.
-
-This metadata can be used for:
-
-*   Model training and fine-tuning for classification and reasoning models.
-*   Generating embeddings for educational content.
-*   Building searchable databases of educational materials.
+**4. Development / Debugging**
+Start the local Vite server to interactively preview the HTML/CSS rendering of the views.
+```bash
+npm run dev
+```
 
 ## Contributing
 
-Contributions are welcome! Adding new generators for additional educational competencies is a great way to help grow the available labeled training data for open-source AI education models.
-
-For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Adding new generators and views is a great way to help grow the available labeled training data for open-source AI education models. Please read `DOCS.md` to understand how to scaffold and register a new dataset module.
 
 ## License
 
-This project is licensed under the Apache 2.0 License. See the LICENSE file for details.
+This project is licensed under the Apache 2.0 License. See the `LICENSE` file for details.
